@@ -1,0 +1,1 @@
+<Project><PropertyGroup><BaseIntermediateOutputPath>obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath><BaseOutputPath>bin/$(MSBuildProjectName)/</BaseOutputPath><CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies><NuGetAudit>true</NuGetAudit><NuGetAuditMode>all</NuGetAuditMode></PropertyGroup></Project>

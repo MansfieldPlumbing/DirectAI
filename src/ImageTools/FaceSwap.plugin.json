@@ -1,0 +1,11 @@
+{
+  "id": "faceswap",
+  "assembly": "DirectAI.FaceSwap.dll",
+  "type": "DirectAI.FaceSwapPlugin",
+  "capabilities": [
+    {
+      "id": "faces.swap",
+      "description": "FaceSwap image operation"
+    }
+  ]
+}

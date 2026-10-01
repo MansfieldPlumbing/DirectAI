@@ -1,0 +1,3 @@
+* text=auto
+# Raw benchmark evidence retains original bytes.
+benchmarks/** -text -whitespace

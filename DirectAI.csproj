@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="projects/DirectAI.Core.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.Diffusion.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.DirectML.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.Host.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.Erase.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.Segmentation.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.FaceSwap.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.Resize.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="projects/DirectAI.ModelConversion.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

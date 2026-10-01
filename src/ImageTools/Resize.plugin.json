@@ -1,0 +1,11 @@
+{
+  "id": "resize",
+  "assembly": "DirectAI.Resize.dll",
+  "type": "DirectAI.ResizePlugin",
+  "capabilities": [
+    {
+      "id": "images.resize",
+      "description": "Resize image operation"
+    }
+  ]
+}

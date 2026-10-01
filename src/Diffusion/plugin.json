@@ -1,0 +1,12 @@
+{
+  "id": "diffusion",
+  "assembly": "DirectAI.Diffusion.dll",
+  "type": "DirectAI.DiffusionPlugin",
+  "capabilities": [
+    { "id": "diffusion.generate", "description": "SD 1.5 LCM text-to-image with resident ORT DirectML stages" },
+    { "id": "diffusion.inpaint", "description": "Selection-aware inpainting with an SD 1.5 LCM model" },
+    { "id": "diffusion.benchmark", "description": "Warm resident stage-placement benchmark with image/JSON receipts" },
+    { "id": "diffusion.models", "description": "List locally installed diffusion model directories" },
+    { "id": "directml.devices", "description": "Enumerate DXGI adapters and default stage placement" }
+  ]
+}

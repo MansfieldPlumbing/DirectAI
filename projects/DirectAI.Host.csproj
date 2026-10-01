@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PlatformTarget>x64</PlatformTarget>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../src/Host/Program.cs" />
+    <ProjectReference Include="DirectAI.Core.csproj" />
+    <ProjectReference Include="DirectAI.Http.csproj" />
+    <ProjectReference Include="DirectAI.NamedPipes.csproj" />
+    <ProjectReference Include="DirectAI.Cli.csproj" />
+    <ProjectReference Include="DirectAI.Routing.csproj" />
+    <None Include="../src/Host/studio.html" Link="studio.html" CopyToOutputDirectory="Always" />
+    <Compile Include="../src/Host/HostBootstrap.cs" />
+    <Compile Include="../src/Host/WindowsOnly.cs" />
+  </ItemGroup>
+</Project>

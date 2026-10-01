@@ -1,0 +1,11 @@
+{
+  "id": "erase",
+  "assembly": "DirectAI.Erase.dll",
+  "type": "DirectAI.ErasePlugin",
+  "capabilities": [
+    {
+      "id": "images.erase",
+      "description": "Erase image operation"
+    }
+  ]
+}

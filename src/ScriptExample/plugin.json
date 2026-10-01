@@ -1,0 +1,6 @@
+{
+  "id": "scripts",
+  "kind": "powershell",
+  "script": "Echo.ps1",
+  "capabilities": [{"id":"scripts.echo","description":"Example PS1 capability; JSON request on stdin, JSON result on stdout"}]
+}

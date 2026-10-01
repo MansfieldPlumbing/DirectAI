@@ -1,0 +1,15 @@
+{
+  "id": "segmentation",
+  "assembly": "DirectAI.Segmentation.dll",
+  "type": "DirectAI.SegmentationPlugin",
+  "capabilities": [
+    {
+      "id": "images.segment",
+      "description": "Segmentation image operation"
+    },
+    {
+      "id": "images.removebg",
+      "description": "Segmentation image operation"
+    }
+  ]
+}

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DirectAI Studio — Single Artboard Multi-GPU Engine</title>
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --panel-bg: #181b22;
+            --panel-border: #282d38;
+            --accent: #3b82f6;
+            --accent-glow: #1d4ed8;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --active-tab: #222733;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        header {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 8px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+        .badge { background: #1e3a8a; color: #60a5fa; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+        .gpu-telemetry { display: flex; gap: 8px; font-size: 12px; color: var(--text-dim); }
+        .gpu-pill { background: #1e293b; border: 1px solid #334155; padding: 2px 8px; border-radius: 12px; }
+
+        .workspace { flex: 1; display: flex; height: calc(100vh - 48px); overflow: hidden; }
+
+        .tools-bar {
+            width: 54px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 10px;
+        }
+        .tool-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.15s ease;
+        }
+        .tool-btn:hover { background: #242936; color: var(--text-main); }
+        .tool-btn.active { background: var(--accent); color: white; border-color: var(--accent-glow); }
+
+        .artboard-viewport {
+            flex: 1;
+            background: #08090c;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: radial-gradient(#1e222d 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 1px #334155;
+            border-radius: 4px;
+            background: #111;
+        }
+        canvas { display: block; border-radius: 4px; }
+        #maskCanvas { position: absolute; top: 0; left: 0; pointer-events: auto; }
+
+        /* Candidates Strip (Krita Diffusion style) */
+        .candidates-bar {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(24, 27, 34, 0.95);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 90%;
+            overflow-x: auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+        }
+        .candidate-card {
+            width: 72px;
+            height: 72px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            transition: border-color 0.15s;
+        }
+        .candidate-card:hover { border-color: var(--accent); }
+        .candidate-card.active { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+        .candidate-card img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Right Inspector Panel */
+        .inspector {
+            width: 360px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 14px;
+            overflow-y: auto;
+        }
+        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 4px; }
+        .field-group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 12px; color: var(--text-dim); }
+        input[type="text"], input[type="number"], textarea, select {
+            background: #0f1218;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 7px 10px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+        textarea { resize: vertical; min-height: 60px; }
+        .slider-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+        input[type="range"] { accent-color: var(--accent); width: 100%; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 9px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary {
+            background: #242936;
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 7px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-secondary:hover { background: #2d3342; }
+
+        .row-group { display: flex; gap: 8px; }
+        .hw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #0f1218; padding: 8px; border-radius: 6px; border: 1px solid var(--panel-border); }
+        .hw-item { display: flex; flex-direction: column; gap: 2px; }
+        .hw-item label { font-size: 10px; text-transform: uppercase; }
+        .hw-item select { padding: 4px 6px; font-size: 11px; }
+
+        /* Layers Stack */
+        .layers-box {
+            background: #0f1218;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .layer-item {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #181c24;
+            cursor: pointer;
+        }
+        .layer-item.active { border-left: 3px solid var(--accent); }
+
+        #statusHUD {
+            position: absolute;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #334155;
+            backdrop-filter: blur(8px);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: none;
+            color: #38bdf8;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <span>DirectAI Studio</span>
+            <span class="badge">Multi-Die DirectML</span>
+        </div>
+        <div class="gpu-telemetry" id="gpuTelemetry">
+            <span class="gpu-pill">Scanning GPUs...</span>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <!-- Tools Bar -->
+        <div class="tools-bar">
+            <button class="tool-btn active" id="toolSelect" title="Select / Move">✋</button>
+            <button class="tool-btn" id="toolWand" title="AI Wand (MobileSAM Tap Selection)">🪄</button>
+            <button class="tool-btn" id="toolInpaint" title="Krita Inpaint Brush">🖌️</button>
+            <button class="tool-btn" id="toolErase" title="Instant Generative Erase (MI-GAN)">🩹</button>
+            <button class="tool-btn" id="toolRemoveBg" title="Remove Background (Cutout)">✂️</button>
+            <button class="tool-btn" id="toolClearMask" title="Clear Mask">🧹</button>
+            <button class="tool-btn" id="toolFace" title="Face Swap">👤</button>
+        </div>
+
+        <!-- Canvas Artboard -->
+        <div class="artboard-viewport">
+            <div id="statusHUD">Ready</div>
+            <div class="canvas-container" id="canvasBox">
+                <canvas id="mainCanvas" width="512" height="512"></canvas>
+                <canvas id="maskCanvas" width="512" height="512"></canvas>
+            </div>
+
+            <!-- Candidates Strip -->
+            <div class="candidates-bar" id="candidatesBar" style="display:none;">
+                <span style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Candidates:</span>
+                <div id="candidatesList" style="display: flex; gap: 8px;"></div>
+            </div>
+        </div>
+
+        <!-- Right Controls & Knobs -->
+        <div class="inspector">
+            <!-- Hardware Knobs Section -->
+            <div class="section-title">Hardware Knobs (GPU Stage Mapping)</div>
+            <div class="hw-grid">
+                <div class="hw-item">
+                    <label>Stage 0: Text</label>
+                    <select id="selDevTe"></select>
+                </div>
+                <div class="hw-item">
+                    <label>Stage 1: UNet</label>
+                    <select id="selDevUnet"></select>
+                </div>
+                <div class="hw-item">
+                    <label>Stage 2: VAE</label>
+                    <select id="selDevVae"></select>
+                </div>
+                <div class="hw-item">
+                    <label>Stage 3: Aux/SAM</label>
+                    <select id="selDevAux"></select>
+                </div>
+            </div>
+            <div class="row-group">
+                <button class="btn-secondary" style="flex:1;" id="btnPresetMulti">Distributed Dies</button>
+                <button class="btn-secondary" style="flex:1;" id="btnPresetSingle">Single GPU</button>
+                <button class="btn-secondary" style="flex:1;" id="btnApplyHw">Apply HW</button>
+            </div>
+
+            <!-- Generation Settings -->
+            <div class="section-title" style="margin-top: 6px;">Generation & Iterations</div>
+            <div class="field-group">
+                <label>Model</label>
+                <select id="modelSelect"><option value="Quick-LCM-amuse">Quick-LCM-amuse (SD 1.5)</option></select>
+            </div>
+
+            <div class="field-group">
+                <label>Prompt</label>
+                <textarea id="promptInput">a photorealistic majestic snow leopard in the himalayas, studio lighting, 8k</textarea>
+            </div>
+
+            <div class="row-group">
+                <div class="field-group" style="flex: 2;">
+                    <div class="slider-row">
+                        <label>Iterations</label>
+                        <span id="stepVal">4</span>
+                    </div>
+                    <input type="range" id="stepSlider" min="1" max="25" value="4">
+                </div>
+                <div class="field-group" style="flex: 1;">
+                    <label>Candidates</label>
+                    <select id="candidateSelect">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row-group">
+                <div class="field-group" style="flex: 2;">
+                    <label>Resolution</label>
+                    <select id="resSelect">
+                        <option value="512x512">512 × 512 (Standard)</option>
+                        <option value="768x768">768 × 768</option>
+                        <option value="1024x1024">1024 × 1024 (HD)</option>
+                    </select>
+                </div>
+                <div class="field-group" style="flex: 1;">
+                    <label>Seed</label>
+                    <input type="number" id="seedInput" value="42">
+                </div>
+            </div>
+
+            <button class="btn-primary" id="btnAction">
+                <span>⚡ Generate Candidates</span>
+            </button>
+
+            <!-- Artboard Layers -->
+            <div class="section-title" style="margin-top: 8px;">Artboard Layers</div>
+            <div class="layers-box">
+                <div class="layer-item active" id="layerArtboard"><span>🖼️ Base Artboard</span><span style="color:#10b981;" id="lblRes">512x512</span></div>
+                <div class="layer-item" id="layerMask"><span>🎨 Mask Layer</span><span style="color:#ef4444;" id="lblMask">Empty</span></div>
+            </div>
+
+            <div class="row-group" style="margin-top: auto;">
+                <button class="btn-secondary" style="flex:1;" id="btnResizeArtboard">📐 Resize</button>
+                <button class="btn-secondary" style="flex:1;" id="btnExport">💾 Export PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mainCanvas = document.getElementById('mainCanvas');
+        const maskCanvas = document.getElementById('maskCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        const maskCtx = maskCanvas.getContext('2d');
+        const statusHUD = document.getElementById('statusHUD');
+
+        // Draw initial artboard
+        function initCanvas(w = 512, h = 512) {
+            mainCanvas.width = w; mainCanvas.height = h;
+            maskCanvas.width = w; maskCanvas.height = h;
+            document.getElementById('lblRes').innerText = `${w}x${h}`;
+
+            const grad = mainCtx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#111827');
+            grad.addColorStop(1, '#030712');
+            mainCtx.fillStyle = grad;
+            mainCtx.fillRect(0, 0, w, h);
+        }
+        initCanvas(512, 512);
+
+        let activeTool = 'select';
+        let brushSize = 32;
+        let isDrawing = false;
+        let hasMaskDrawn = false;
+        let devicesList = [];
+
+        function setTool(tool) {
+            activeTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            if (tool === 'select') document.getElementById('toolSelect').classList.add('active');
+            if (tool === 'wand') document.getElementById('toolWand').classList.add('active');
+            if (tool === 'inpaint') document.getElementById('toolInpaint').classList.add('active');
+            if (tool === 'erase') document.getElementById('toolErase').classList.add('active');
+            if (tool === 'removebg') document.getElementById('toolRemoveBg').classList.add('active');
+            if (tool === 'face') document.getElementById('toolFace').classList.add('active');
+            updateActionBtn();
+        }
+
+        document.getElementById('toolSelect').onclick = () => setTool('select');
+        document.getElementById('toolWand').onclick = () => setTool('wand');
+        document.getElementById('toolInpaint').onclick = () => setTool('inpaint');
+        document.getElementById('toolErase').onclick = () => doGenerativeErase();
+        document.getElementById('toolRemoveBg').onclick = () => doRemoveBg();
+        document.getElementById('toolClearMask').onclick = () => clearMask();
+        document.getElementById('toolFace').onclick = () => setTool('face');
+
+        function clearMask() {
+            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+            hasMaskDrawn = false;
+            document.getElementById('lblMask').innerText = 'Empty';
+            updateActionBtn();
+        }
+
+        function updateActionBtn() {
+            const btn = document.getElementById('btnAction');
+            if (activeTool === 'inpaint' && hasMaskDrawn) {
+                btn.innerHTML = '<span>🖌️ Inpaint Selection (Krita Oracle)</span>';
+            } else {
+                btn.innerHTML = '<span>⚡ Generate Candidates</span>';
+            }
+        }
+
+        // Mask Drawing & AI Wand Tap
+        maskCanvas.onmousedown = async (e) => {
+            const rect = maskCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (maskCanvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (maskCanvas.height / rect.height);
+
+            if (activeTool === 'wand') {
+                showHud('🪄 Segmenting subject with MobileSAM on GPU...');
+                try {
+                    const payload = {
+                        image_base64: mainCanvas.toDataURL('image/png').split(',')[1],
+                        points: [{ x, y, label: 1 }]
+                    };
+                    const res = await fetch('/api/segment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (data.mask_base64) {
+                        const img = new Image();
+                        img.onload = () => {
+                            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+                            // Draw red overlay for mask
+                            maskCtx.drawImage(img, 0, 0);
+                            hasMaskDrawn = true;
+                            document.getElementById('lblMask').innerText = 'Selected';
+                            showHud(`Subject segmented in ${data.elapsedMs} ms!`);
+                            updateActionBtn();
+                        };
+                        img.src = 'data:image/png;base64,' + data.mask_base64;
+                    }
+                } catch (err) {
+                    showHud('Segmentation error: ' + err.message);
+                }
+                return;
+            }
+
+            if (activeTool === 'inpaint') {
+                isDrawing = true;
+                drawBrush(x, y);
+            }
+        };
+
+        window.onmouseup = () => { isDrawing = false; };
+        maskCanvas.onmousemove = (e) => {
+            if (isDrawing && activeTool === 'inpaint') {
+                const rect = maskCanvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (maskCanvas.width / rect.width);
+                const y = (e.clientY - rect.top) * (maskCanvas.height / rect.height);
+                drawBrush(x, y);
+            }
+        };
+
+        function drawBrush(x, y) {
+            maskCtx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+            maskCtx.beginPath();
+            maskCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            maskCtx.fill();
+            hasMaskDrawn = true;
+            document.getElementById('lblMask').innerText = 'Drawn';
+            updateActionBtn();
+        }
+
+        // Generative Erase (MI-GAN)
+        async function doGenerativeErase() {
+            if (!hasMaskDrawn) {
+                alert('Please select or paint the area to erase first!');
+                return;
+            }
+            showHud('🩹 Running Generative Erase (MI-GAN) on GPU...');
+            const binMask = createBinaryMaskCanvas();
+            const res = await fetch('/api/erase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_base64: mainCanvas.toDataURL('image/png').split(',')[1],
+                    mask_base64: binMask.toDataURL('image/png').split(',')[1]
+                })
+            });
+            const data = await res.json();
+            if (data.image_base64) {
+                const img = new Image();
+                img.onload = () => {
+                    mainCtx.drawImage(img, 0, 0);
+                    clearMask();
+                    showHud(`Object erased in ${data.elapsedMs} ms!`);
+                };
+                img.src = 'data:image/png;base64,' + data.image_base64;
+            }
+        }
+
+        // Remove Background (MobileSAM Cutout)
+        async function doRemoveBg() {
+            showHud('✂️ Extracting subject cutout on GPU...');
+            const res = await fetch('/api/removebg', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_base64: mainCanvas.toDataURL('image/png').split(',')[1]
+                })
+            });
+            const data = await res.json();
+            if (data.image_base64) {
+                const img = new Image();
+                img.onload = () => {
+                    mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+                    mainCtx.drawImage(img, 0, 0);
+                    clearMask();
+                    showHud(`Background removed in ${data.elapsedMs} ms!`);
+                };
+                img.src = 'data:image/png;base64,' + data.image_base64;
+            }
+        }
+
+        function createBinaryMaskCanvas() {
+            const c = document.createElement('canvas');
+            c.width = maskCanvas.width; c.height = maskCanvas.height;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+            const mData = maskCtx.getImageData(0, 0, c.width, c.height);
+            const bData = ctx.createImageData(c.width, c.height);
+            for (let i = 0; i < mData.data.length; i += 4) {
+                const val = mData.data[i + 3] > 10 ? 255 : 0;
+                bData.data[i] = val; bData.data[i+1] = val; bData.data[i+2] = val; bData.data[i+3] = 255;
+            }
+            ctx.putImageData(bData, 0, 0);
+            return c;
+        }
+
+        function showHud(text) {
+            statusHUD.innerText = text;
+            statusHUD.style.display = 'block';
+        }
+
+        // Sliders & Selectors
+        document.getElementById('stepSlider').oninput = (e) => {
+            document.getElementById('stepVal').innerText = e.target.value;
+        };
+
+        // Telemetry & Hardware Knobs
+        async function loadHardware() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                devicesList = data.devices;
+
+                document.getElementById('gpuTelemetry').innerHTML = data.devices.map(d =>
+                    `<span class="gpu-pill">${d.Description.split(' ')[0]} ${d.Description.split(' ')[1]||''} (${d.DedicatedMemoryGB}G)</span>`
+                ).join('');
+
+                const fillSelect = (id, curVal) => {
+                    const sel = document.getElementById(id);
+                    sel.innerHTML = data.devices.map(d =>
+                        `<option value="${d.DirectMlIndex}" ${d.DirectMlIndex === curVal ? 'selected' : ''}>Dev ${d.DirectMlIndex}: ${d.Description.substring(0, 16)}</option>`
+                    ).join('');
+                };
+
+                fillSelect('selDevTe', data.allocations.textEncoder);
+                fillSelect('selDevUnet', data.allocations.unet);
+                fillSelect('selDevVae', data.allocations.vaeDecoder);
+                fillSelect('selDevAux', data.allocations.aux);
+            } catch (err) { console.error(err); }
+        }
+        loadHardware();
+
+        // Apply Hardware Allocations
+        document.getElementById('btnApplyHw').onclick = async () => {
+            const te = parseInt(document.getElementById('selDevTe').value);
+            const unet = parseInt(document.getElementById('selDevUnet').value);
+            const vae = parseInt(document.getElementById('selDevVae').value);
+            const aux = parseInt(document.getElementById('selDevAux').value);
+            showHud('Updating GPU Stage Topology...');
+            await fetch('/api/devices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ textEncoder: te, unet: unet, vaeDecoder: vae, aux: aux })
+            });
+            showHud('Hardware stage allocation updated!');
+            setTimeout(() => statusHUD.style.display = 'none', 2000);
+        };
+
+        document.getElementById('btnPresetMulti').onclick = () => {
+            if (devicesList.length >= 4) {
+                document.getElementById('selDevTe').value = devicesList[0].DirectMlIndex;
+                document.getElementById('selDevUnet').value = devicesList[1].DirectMlIndex;
+                document.getElementById('selDevVae').value = devicesList[2].DirectMlIndex;
+                document.getElementById('selDevAux').value = devicesList[3].DirectMlIndex;
+                document.getElementById('btnApplyHw').click();
+            }
+        };
+
+        document.getElementById('btnPresetSingle').onclick = () => {
+            const d = devicesList[0]?.DirectMlIndex || 0;
+            document.getElementById('selDevTe').value = d;
+            document.getElementById('selDevUnet').value = d;
+            document.getElementById('selDevVae').value = d;
+            document.getElementById('selDevAux').value = d;
+            document.getElementById('btnApplyHw').click();
+        };
+
+        // Resolution Switcher
+        document.getElementById('resSelect').onchange = (e) => {
+            const [w, h] = e.target.value.split('x').map(Number);
+            initCanvas(w, h);
+        };
+
+        // Action Button: Generate or Inpaint with Candidates
+        document.getElementById('btnAction').onclick = async () => {
+            const prompt = document.getElementById('promptInput').value;
+            const model = document.getElementById('modelSelect').value;
+            const steps = parseInt(document.getElementById('stepSlider').value);
+            const seed = parseInt(document.getElementById('seedInput').value);
+            const candidates = parseInt(document.getElementById('candidateSelect').value);
+            const [width, height] = document.getElementById('resSelect').value.split('x').map(Number);
+
+            if (hasMaskDrawn) {
+                showHud(`Denoising ${candidates} Inpaint Candidate(s)...`);
+                const binMask = createBinaryMaskCanvas();
+                const res = await fetch('/api/inpaint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt, model, steps, seed, candidates,
+                        image_base64: mainCanvas.toDataURL('image/png').split(',')[1],
+                        mask_base64: binMask.toDataURL('image/png').split(',')[1]
+                    })
+                });
+                const data = await res.json();
+                renderCandidates(data.candidates);
+                showHud(`Inpainted in ${data.elapsedMs} ms!`);
+            } else {
+                showHud(`Generating ${candidates} Candidate(s) on GPU...`);
+                const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, model, steps, seed, width, height, candidates })
+                });
+                const data = await res.json();
+                renderCandidates(data.candidates);
+                showHud(`Generated in ${data.elapsedMs} ms (${data.stepMs.toFixed(1)} ms/step)!`);
+            }
+        };
+
+        function renderCandidates(candidates) {
+            const strip = document.getElementById('candidatesBar');
+            const list = document.getElementById('candidatesList');
+            list.innerHTML = '';
+
+            if (!candidates || candidates.length === 0) {
+                strip.style.display = 'none';
+                return;
+            }
+
+            strip.style.display = 'flex';
+            candidates.forEach((c, idx) => {
+                const card = document.createElement('div');
+                card.className = 'candidate-card' + (idx === 0 ? ' active' : '');
+                card.innerHTML = `<img src="data:image/png;base64,${c.image_base64}" title="Seed ${c.seed}">`;
+                card.onclick = () => {
+                    document.querySelectorAll('.candidate-card').forEach(x => x.classList.remove('active'));
+                    card.classList.add('active');
+                    const img = new Image();
+                    img.onload = () => { mainCtx.drawImage(img, 0, 0); };
+                    img.src = 'data:image/png;base64,' + c.image_base64;
+                };
+                list.appendChild(card);
+            });
+
+            // Set canvas to first candidate
+            const firstImg = new Image();
+            firstImg.onload = () => { mainCtx.drawImage(firstImg, 0, 0); clearMask(); };
+            firstImg.src = 'data:image/png;base64,' + candidates[0].image_base64;
+        }
+
+        // Export PNG
+        document.getElementById('btnExport').onclick = () => {
+            const link = document.createElement('a');
+            link.download = 'directai_artboard.png';
+            link.href = mainCanvas.toDataURL('image/png');
+            link.click();
+        };
+
+        // Resize Canvas Artboard
+        document.getElementById('btnResizeArtboard').onclick = async () => {
+            const w = prompt('Enter new width (e.g. 512, 768, 1024):', mainCanvas.width);
+            const h = prompt('Enter new height (e.g. 512, 768, 1024):', mainCanvas.height);
+            if (!w || !h) return;
+            const res = await fetch('/api/resize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_base64: mainCanvas.toDataURL('image/png').split(',')[1],
+                    width: parseInt(w),
+                    height: parseInt(h)
+                })
+            });
+            const data = await res.json();
+            initCanvas(parseInt(w), parseInt(h));
+            const img = new Image();
+            img.onload = () => mainCtx.drawImage(img, 0, 0);
+            img.src = 'data:image/png;base64,' + data.image_base64;
+        };
+    </script>
+</body>
+</html>
