@@ -1,29 +1,32 @@
-# DirectAI — Heterogeneous Multi-GPU / Multi-Die DirectML Inference Engine
+# DirectAI — DirectML ONNX Inferencing Engine for Windows
 
 ## 1. Project Invariants & Purpose
-DirectAI is a clean, owned, low-latency DirectML inference orchestrator for multi-die and heterogeneous multi-GPU configurations on Windows x64.
-- **Zero Third-Party Wrapper Bloat**: No dependency on OnnxStack, sd.cpp, or fragile UI frameworks. Direct implementation on `Microsoft.ML.OnnxRuntime.DirectML`.
-- **Heterogeneous & Multi-Die Support**: Designed generically for any multi-adapter topology:
-  - Multi-die accelerators (e.g. dual-die AMD Radeon Pro V340L Vega 10 dies).
-  - Cross-vendor heterogeneous configurations (e.g. NVIDIA Quadro P2000 alongside AMD Radeon Pro V340L dies).
-  - Multi-card desktop and workstation rigs.
-- **Permanent Stage Residency**: Sub-model stages remain resident on their assigned devices. Zero pipeline reloads between Text-to-Image, Image-to-Image, or Inpaint workflows.
-- **Rapid Packed Math (FP16)**: DirectML compiles HLSL compute shaders natively utilizing half-precision math (such as Vega 10 Rapid Packed Math).
+DirectAI is a lightweight, low-latency, modular inference engine for ONNX models running on Windows via DirectML.
+- **Architectural Scope**: Supports both single-GPU and multi-GPU / multi-die topologies generically.
+- **Cross-Vendor Heterogeneity**: Works across any DirectX 12 compatible hardware (AMD, NVIDIA, Intel, Qualcomm Snapdragon X) in homogeneous, multi-die, or heterogeneous configurations.
+- **Direct Runtime**: Built directly on `Microsoft.ML.OnnxRuntime.DirectML`. Zero dependency on third-party frameworks or wrapper bloat.
+- **Permanent Stage Residency**: Sub-model pipeline stages remain resident in VRAM on their assigned hardware device, eliminating thrashing and reloads between inferencing workflows.
+- **Minimal Host Boundary Overhead**: Inter-stage activations (embeddings, latent representations, decoded outputs) are transferred with minimal host/memory overhead between execution devices.
 
-## 2. Hardware Topology on Host Machine
-- **Device 0**: NVIDIA Quadro P2000 (PCIe, 5 GB GDDR5) — available for auxiliary/heterogeneous staging.
-- **Device 1**: AMD Radeon Pro V340L Die 0 (PCIe, 8 GB HBM2) — Stage 0 (Text Encoder).
-- **Device 2**: AMD Radeon Pro V340L Die 1 (PCIe, 8 GB HBM2) — Stage 1 (UNet Denoise Engine).
-- **Device 3**: AMD Radeon Pro V340L Die 2 (PCIe, 8 GB HBM2) — Stage 2 (VAE Decoder).
-- **Device 4**: AMD Radeon Pro V340L Die 3 (PCIe, 8 GB HBM2) — Stage 3 (ControlNet / Second Pass).
-- **Device 5**: AMD Radeon Pro V340L Die 4 (PCIe, 8 GB HBM2) — Spare compute die.
+## 2. Multi-Device Orchestration Model
+DirectAI abstracts hardware adapters into logical compute devices:
+- **Device Discovery**: Dynamically queries DXGI/DirectML adapters at startup. Discovers vendor, dedicated VRAM, shared memory, and hardware flags.
+- **Flexible Device Mapping**:
+  - **Single-GPU Mode**: Executes all pipeline stages on a single selected adapter.
+  - **Multi-GPU / Multi-Die Pipeline Mode**: Distributes modular stages (e.g., Text Encoder, UNet / DiT denoiser, ControlNet, VAE Decoder) across distinct adapters.
+  - **Heterogeneous Mode**: Distributes stages across GPUs from different vendors (e.g. NVIDIA + AMD) or asymmetric VRAM tiers.
+- **Automatic Budgeting**: Stages can be placed based on available dedicated VRAM and compute profile.
 
 ## 3. Data & Tensor Contracts
-- **CLIP Text Encoder**: Text Tokens $\to$ `prompt_embeds` (`[2, 77, 768]` ~600 KB - 1.2 MB).
-- **UNet Denoise Engine**: `latents` (`[1, 4, 64, 64]` ~64 KB) + `timestep` + `prompt_embeds` $\to$ noise residuals.
-- **VAE Decoder**: Final Latents (`[1, 4, 64, 64]`) $\to$ RGB Image (`[1, 3, 512, 512]` ~3 MB).
-- **Boundary Transfers**: Minimal payload sizes crossing PCIe boundaries via DirectML/D3D12.
+- **Modular Diffusion Pipelines**:
+  - `TextEncoder`: Tokens $\to$ Text Embeddings (~1 MB).
+  - `UNet / DiT`: Latent steps ($4 \times H/8 \times W/8$) $\to$ Predicted noise (~64 KB - 256 KB).
+  - `VAE Decoder`: Final Latents $\to$ RGB Output (~3 MB).
+- **Execution Lifecycle**:
+  - Pipelines load once into assigned devices and remain active.
+  - Workflows (Text-to-Image, Image-to-Image, Inpainting, ControlNet) share the resident UNet and VAE without eviction.
 
-## 4. Environment Invariants
-- Runtime: .NET 10 / .NET 11 (Windows x64).
-- Redirect BitLocker-constrained variables (`DOTNET_CLI_HOME`, `NUGET_PACKAGES`, `NUGET_HTTP_CACHE_PATH`) to local non-locked storage (`C:\dev\DirectAI\.nuget`, etc.).
+## 4. Environment & Platform
+- OS: Windows x64.
+- Runtime: .NET 10 / .NET 11.
+- Target EP: `DirectMLExecutionProvider`.
