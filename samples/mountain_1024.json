@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "pre-existing sample",
-  "originalPath": "C:\\dev\\DirectAI\\mountain_1024.png",
+  "originalPath": "mountain_1024.png",
   "sha256": "4623D1F1B50ED38BA137BF7D782773024E19BA4E6EF11DA0CC15B2495BC97FCA",
   "generationParameters": null
 }

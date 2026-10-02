@@ -77,8 +77,7 @@ Unmatched payloads were not proven to be equivalent through casts, transposes,
 rounding or other export transformations. In particular, exact text-encoder
 weight parity has not been established. These are measured comparable SD1.5-LCM
 workloads from the named model family, **not a proven identical-all-weights
-comparison**. Full graph-and-weight parity requires the validated conversion
-recipe requested by the user.
+comparison**. Full graph-and-weight parity requires a validated conversion recipe.
 
 ## Receipts
 

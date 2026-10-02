@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "pre-existing sample",
-  "originalPath": "C:\\dev\\DirectAI\\kingfisher_test.png",
+  "originalPath": "kingfisher_test.png",
   "sha256": "145BA97DC85486378057ECC28A0514763C5292E5F2BCDFA967F1C56897A16417",
   "generationParameters": null
 }

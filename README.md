@@ -49,4 +49,4 @@ These are historical measurements from the pre-refactor Release executable. The 
 The [graph-builder implementation plan](docs/GRAPH-BUILDER-PLAN.md) starts with one whole ONNX graph, identifies legal seams, and compiles resource and GPU dependency contracts before execution. It is a plan, not a claim of current support.
 
 ## Dependencies
-See [third-party notices](THIRD-PARTY-NOTICES.md) and [publication hygiene report](docs/PUBLICATION-HYGIENE.md). Plugins and PS1 scripts execute with the caller's privileges; discovery is not a sandbox. The local HTTP adapter binds loopback. Models have independent licenses.
+See [third-party notices](THIRD-PARTY-NOTICES.md). Plugins and PS1 scripts execute with the caller's privileges; discovery is not a sandbox. The local HTTP adapter binds loopback. Models have independent licenses.

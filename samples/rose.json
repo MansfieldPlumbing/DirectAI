@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "pre-existing sample",
-  "originalPath": "C:\\dev\\DirectAI\\rose.png",
+  "originalPath": "rose.png",
   "sha256": "05D37C5FA947E3DD9FCC4F9FE889363DCA9F83D92C27EDA93FDDFF4D83E4C301",
   "generationParameters": null
 }
