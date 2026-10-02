@@ -43,7 +43,7 @@ CyberRealistic-LCM family, 512×512, six LCM steps, seed 42, FP16, resident sess
 
 These are historical measurements from the pre-refactor Release executable. The original installed ONNX model and checkpoint-derived GGUF were **not fully weight-identical**. Each UNet stayed on one GPU; whole-stage placement is not UNet partitioning. Timings exclude loading and image encoding and have different runtime timer boundaries. The result is a comparable workload observation, not proof that DirectML is universally 2.8× faster. Subsequent exact checkpoint rebinding requires a new controlled head-to-head benchmark.
 
-[Original measurements and weight audit](benchmarks/sd15-cyberrealistic/). The V340L experiment is documented in [V340L-Enablement](https://github.com/MansfieldPlumbing/V340L-Enablement).
+The measurements and weight audit are in [V340L-Enablement](https://github.com/MansfieldPlumbing/V340L-Enablement/tree/main/benchmarks/sd15-cyberrealistic). The V340L experiment is documented in [V340L-Enablement](https://github.com/MansfieldPlumbing/V340L-Enablement).
 
 ## Next work
 The [graph-builder implementation plan](docs/GRAPH-BUILDER-PLAN.md) starts with one whole ONNX graph, identifies legal seams, and compiles resource and GPU dependency contracts before execution. It is a plan, not a claim of current support.
